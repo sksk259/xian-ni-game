@@ -106,7 +106,7 @@ body[data-view="home"] .prof-bag{display:none!important}
 <div class="row2" style="margin-top:8px"><button class="primary" onclick="doRest()">🛌 休息调息 <span style="font-weight:400">调息60秒后气血/灵力/体力回满 · 解除死亡虚弱</span></button><button onclick="openCodex()">📖 图鉴</button></div>
 <div class="row2" style="margin-top:8px"><button onclick="openAch()">🏅 成就</button><button onclick="openQuest()">📜 主线剧情任务链</button><button onclick="openEnhance()">🔨 装备强化 +1~+15</button></div>
 <div class="row2" style="margin-top:8px"><button onclick="openGongPair()">🧬 功法搭配</button><button onclick="openRebirthRules()">♻️ 寿元转世规则</button><button onclick="restartGuide()">🧭 重开新手引导</button><button onclick="openExplored()">🗺️ 已探索图鉴</button></div>
-<div class="row2" style="margin-top:8px"><button class="primary" id="btnBoardQuick" onclick="openBoard()">🏆 排行榜 · 查看榜单</button><button class="primary" id="btnShareQuick" onclick="openBoard();shareMyScore()">🔗 分享我的成绩到排行榜</button></div>
+<div class="row2" style="margin-top:8px"><button class="primary" id="btnBoardQuick" onclick="openBoard()">🏆 排行榜 · 查看榜单</button><button class="primary" id="btnShareQuick" onclick="openBoard();uploadScore()">☁️ 上传我的成绩到排行榜</button></div>
 <div class="row2" style="margin-top:8px"><button class="primary" id="btnBreakQuick" onclick="openBreak()">⚡ 突破 · 查看突破面板</button><button id="btnDelQuick" onclick="document.getElementById('btnRestart').click()">🗑️ 删除存档 / 重开新号</button></div>
 <div class="row2" style="margin-top:8px"><button class="primary" onclick="openSaveMgr()">💾 存档管理 · 查看存档 / 导出短码备份</button><button onclick="openSaveMgr();setTimeout(exportShortUI,80)">📤 导出短存档码（一键复制）</button></div><div id="extraInfo" class="small" style="margin-top:8px"></div></div>
 <div id="guideBox" class="card" style="margin-top:10px"></div>
@@ -152,10 +152,10 @@ body[data-view="home"] .prof-bag{display:none!important}
 <button id="btnHunt" class="primary">⚔️ 进入打怪界面 <span style="font-weight:400">选地图 · 选怪物 · 看清对手再开打</span></button>
 </div>
 <h3>🏆 排行榜</h3><div class="btns">
-<button id="btnBoard">🏆 查看排行榜 <span class="small">我和朋友的成绩</span></button>
-<button id="btnShareScore">🔗 分享我的成绩 <span class="small">生成链接发到群里</span></button>
+<button id="btnBoard">🏆 查看排行榜 <span class="small">我和朋友的共享成绩</span></button>
+<button id="btnUploadScore">☁️ 上传我的成绩 <span class="small">同步到共享榜</span></button>
 </div>
-<p class="small" id="shareHint">点「分享我的成绩」生成一条成绩链接，发到群里，朋友点开就能把你的成绩登记到他的排行榜，不用联网。</p>
+<p class="small" id="uploadStatus">打开排行榜会自动拉取共享榜；点「上传我的成绩」把你当前的境界和修为同步上去，朋友刷新就能看到。同一个道号只留最高一条。</p>
 <h3>🏪 坊市商店 · 签到 · 兑换</h3>
 <div class="card" style="padding:10px" id="shopCard">
 <div class="kv"><span>💎 灵石余额（钱包）</span><b id="shopStone">0</b></div>
@@ -211,14 +211,13 @@ body[data-view="home"] .prof-bag{display:none!important}
 </div></div>
 <div id="boardModal" class="modal hidden"><div class="card" style="max-width:560px;width:100%;max-height:90vh;overflow:auto">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">🏆 排行榜</h2><button id="btnBoardClose" style="width:auto;text-align:center">关闭</button></div>
-<p class="small">按境界高低、修为多少排序。同一个道号只留最高修为一条。你的成绩自动在榜上；朋友的成绩点开他们分享的链接就会自动登记进来，全程不用联网。</p>
+<p class="small">共享排行榜（联网）：打开自动拉取最新榜单，按境界、小阶、修为排序，同一个道号只留最高一条。上传只同步成绩，不会动你和朋友各自的本机角色存档。</p>
 <div id="boardBody"><p class="small">加载中…</p></div>
 <div class="card" style="margin-top:12px">
-<b>🔗 分享我的成绩</b>
-<p class="small" style="margin:6px 0">点按钮生成一条成绩链接，把它发到群里就行。朋友点开链接，你的成绩会自动登记到他的排行榜上。</p>
-<button id="btnBoardShare" class="primary">🔗 生成并复制成绩链接</button>
-<p class="small" id="shareStatus" style="margin-top:6px"></p>
-<textarea id="myScoreLink" rows="2" readonly style="margin-top:6px" placeholder="你的成绩链接会显示在这里"></textarea>
+<b>☁️ 同步我的成绩</b>
+<p class="small" style="margin:6px 0">点「上传我的成绩」把你当前的道号、境界和小阶、修为同步到共享榜，朋友那边打开排行榜就能看到。上传失败时你的本机成绩不受影响，按提示重试即可。</p>
+<div class="row2"><button id="btnBoardUpload" class="primary">☁️ 上传我的成绩</button><button id="btnBoardRefresh">🔄 刷新排行榜</button></div>
+<p class="small" id="boardUploadStatus" style="margin-top:6px"></p>
 </div>
 </div></div>
 <div id="breakModal" class="modal hidden"><div class="card" style="max-width:560px;width:100%;max-height:90vh;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">⚡ 突破</h2><button style="width:auto;text-align:center" onclick="document.getElementById('breakModal').classList.add('hidden')">关闭</button></div><div id="breakBody"></div></div></div>
@@ -1149,89 +1148,114 @@ document.addEventListener('click',function(){ setTimeout(function(){ try{ update
 window.addEventListener('focus',function(){ try{ updateRedeemButtonState(); }catch(e){} });
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'){ try{ updateRedeemButtonState(); }catch(e){} } });
 
-/* ===== 成绩链接分享排行榜（纯本机 · 不联网） =====
-   分享：生成一条带 #score= 短编码的链接，发到群里；
-   登记：朋友点开链接，页面自动把成绩存进他本机排行榜。 */
+/* ===== 跨朋友共享排行榜（Supabase 真联网） =====
+   打开排行榜自动从 public.leaderboard 拉取共享榜；点上传把我的成绩同步上去。
+   同一个道号只留最高一条，按境界 / 小阶 / 修为排序。
+   排行榜读写只碰 leaderboard 表，绝不读写、覆盖本机角色存档（S / localStorage 存档）。 */
+var SUPA_URL='https://trpyflkpwkhotwitkmtg.supabase.co';
+var SUPA_KEY='sb_publishable_fY8ZirhsLb7j3BOJCwLwuw_zg5U9zBK';
+var PENDING_UPLOAD_KEY='xiuxian_pending_upload_v1';
 var PENDING_SCORE_KEY='xiuxian_pending_score_v1';
-function scoreToCode(f){ return btoa(unescape(encodeURIComponent(JSON.stringify(f)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-function codeToScore(code){
-try{
-var b64=String(code||'').replace(/-/g,'+').replace(/_/g,'/');
-while(b64.length%4)b64+='=';
-var o=JSON.parse(decodeURIComponent(escape(atob(b64))));
-if(!o||typeof o.n!=='string')return null;
-var n=o.n.replace(/[<>&"']/g,'').slice(0,20); if(!n)return null;
-return {n:n,r:Math.max(0,Math.min(9,Math.floor(+o.r||0))),s:Math.max(0,Math.min(3,Math.floor(+o.s||0))),e:Math.max(0,Math.floor(+o.e||0))};
-}catch(e){return null;}
-}
-function parseIncomingScore(){
-var h=location.hash||''; var m=h.match(/[#&]score=([A-Za-z0-9\-_]+)/); if(!m)return null;
-return codeToScore(m[1]);
-}
-function stripScoreHash(){ try{ history.replaceState(null,'',location.href.split('#')[0]); }catch(e){} }
+function supaHeaders(extra){ var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; if(extra)for(var k in extra)h[k]=extra[k]; return h;}
 function showToast(msg){ var t=document.getElementById('toast'); if(!t)return; t.textContent=msg; t.classList.remove('hidden'); clearTimeout(showToast._tm); showToast._tm=setTimeout(function(){ t.classList.add('hidden'); },4500); }
-function registerFriendScore(f){
-if(!S||!f)return 'none';
-if(f.n===(S.fullId||S.name)||f.n===S.name)return 'self';
-S.friends=S.friends||[];
-for(var i=0;i<S.friends.length;i++){ if(S.friends[i].n===f.n){ if(f.e>S.friends[i].e){ S.friends[i]={n:f.n,r:f.r,s:f.s,e:f.e}; save(); return 'updated'; } return 'dup'; } }
-S.friends.push({n:f.n,r:f.r,s:f.s,e:f.e}); save(); return 'added';
+function consumePendingScore(){ /* 旧版成绩链接登记已停用：仅清理历史遗留的待登记成绩与 #score= 链接残片，不再写入本机存档或好友列表 */ try{ localStorage.removeItem(PENDING_SCORE_KEY); }catch(e){} try{ if((location.hash||'').indexOf('score=')>=0) history.replaceState(null,'',location.pathname+location.search); }catch(e){} }
+function myScoreRow(){ return {player_name:(S.fullId||S.name), realm:REALMS[S.realm], stage:SUBS[S.sub], cultivation:Math.floor(S.exp)}; }
+function realmRank(name){ var i=REALMS.indexOf(name); return i<0?0:i; }
+function stageRank(name){ var i=SUBS.indexOf(name); return i<0?0:i; }
+function cmpScore(a,b){ var d=realmRank(b.realm)-realmRank(a.realm); if(d)return d; d=stageRank(b.stage)-stageRank(a.stage); if(d)return d; return (+b.cultivation||0)-(+a.cultivation||0); }
+function localScoreHTML(){
+if(!S) return '';
+return '<div class="card" style="margin-top:10px"><b>📌 我的成绩</b><div class="kv"><span>道号</span><b>'+esc(S.fullId||S.name)+'</b></div><div class="kv"><span>境界</span><b>'+esc(REALMS[S.realm])+' · '+esc(SUBS[S.sub])+'</b></div><div class="kv"><span>修为</span><b>'+Math.floor(S.exp)+'</b></div><p class="small">点下方「上传我的成绩」即可同步到共享榜，朋友那边刷新排行榜就能看到。</p></div>';
 }
-function consumePendingScore(){
-var f=window._incomingScore||null;
-if(!f){ try{ var raw=localStorage.getItem(PENDING_SCORE_KEY); if(raw)f=JSON.parse(raw); }catch(e){} }
-if(!f||!f.n)return;
-window._incomingScore=null;
-try{ localStorage.removeItem(PENDING_SCORE_KEY); }catch(e){}
-if(!S)return;
-var res=registerFriendScore(f);
-if(res==='added'||res==='updated'){ showToast('🏆 已登记「'+f.n+'」的成绩到排行榜'); log('🏆 已登记朋友「'+esc(f.n)+'」的成绩（'+REALMS[f.r]+SUBS[f.s]+' · 修为 '+f.e+'），打开排行榜即可查看。','good'); }
-else if(res==='self'){ showToast('这是你自己的成绩链接，你的成绩已经在榜上了'); }
-}
-function myShareLink(){
-var f={n:(S.fullId||S.name),r:S.realm,s:S.sub,e:Math.floor(S.exp)};
-return location.href.split('#')[0]+'#score='+scoreToCode(f);
-}
-function setShareStatus(msg,ok){ ['shareStatus','shareHint'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.textContent=msg; el.style.color=ok===true?'var(--good)':ok===false?'var(--bad)':''; } }); }
-function shareMyScore(){
-if(!S){ showToast('先创建角色，再分享成绩'); return; }
-var link=myShareLink();
-var ta=document.getElementById('myScoreLink'); if(ta)ta.value=link;
-function done(copied){
-setShareStatus(copied?'✅ 成绩链接已复制！把它发到群里，朋友点开就能把你的成绩登记到他的排行榜。':'成绩链接已生成，就在下方框里。复制这条链接发到群里，朋友点开就能登记你的成绩。', true);
-showToast(copied?'🔗 成绩链接已复制，发到群里就行':'🔗 成绩链接已生成，复制后发到群里就行');
-}
-if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(function(){ done(true); },function(){ if(ta){ ta.focus(); ta.select(); } done(false); }); }
-else { if(ta){ ta.focus(); ta.select(); try{ document.execCommand('copy'); }catch(e){} } done(false); }
-}
-function renderLocalBoard(){
-var body=document.getElementById('boardBody'); if(!body)return;
-if(!S){ body.innerHTML='<p class="small">先创建角色，就能看到排行榜。</p>'; return; }
+function renderBoard(rows){
 var best={};
-function put(n,r,s,e,me){ if(!n)return; if(!best[n]||e>best[n].e) best[n]={n:n,r:r,s:s,e:e,me:!!me}; }
-put((S.fullId||S.name),S.realm,S.sub,Math.floor(S.exp),true);
-(S.friends||[]).forEach(function(f){ put(f.n,f.r,f.s,f.e,false); });
+function put(n,realm,stage,cult,me){ if(!n)return; var cand={player_name:n,realm:realm,stage:stage,cultivation:cult,me:!!me}; var cur=best[n]; if(!cur||cmpScore(cand,cur)<0) best[n]=cand; }
+(rows||[]).forEach(function(r){ put(String(r.player_name||''),r.realm,r.stage,+r.cultivation||0,false); });
+if(S){ var mr=myScoreRow(); put(mr.player_name,mr.realm,mr.stage,mr.cultivation,true); }
 var list=Object.keys(best).map(function(k){ return best[k]; });
-list.sort(function(a,b){ if(b.r!==a.r)return b.r-a.r; if(b.s!==a.s)return b.s-a.s; return b.e-a.e; });
+list.sort(cmpScore);
 var html;
-if(!list.length){ html='<p class="small">榜上还没有成绩。</p>'; }
-else{ html='<div>'+list.slice(0,50).map(function(r,i){ return '<div class="kv"'+(r.me?' style="font-weight:700"':'')+'><span>'+(i+1)+'. '+esc(r.n)+(r.me?'（我）':'')+'</span><b>'+esc(REALMS[r.r])+' · '+esc(SUBS[r.s])+' · 修为 '+Math.floor(r.e)+'</b></div>'; }).join('')+'</div>'; }
-html+='<div class="card" style="margin-top:10px"><b>📌 我的成绩</b><div class="kv"><span>道号</span><b>'+esc(S.fullId||S.name)+'</b></div><div class="kv"><span>境界</span><b>'+esc(REALMS[S.realm])+' · '+esc(SUBS[S.sub])+'</b></div><div class="kv"><span>修为</span><b>'+Math.floor(S.exp)+'</b></div><p class="small">点下方「生成并复制成绩链接」，把链接发到群里，朋友点开就能在他的榜上看到你。</p></div>';
-body.innerHTML=html;
+if(!list.length){ html='<p class="small">共享榜暂时还没有成绩，快来上传第一条吧！</p>'; }
+else{ html='<div>'+list.slice(0,50).map(function(r,i){ var mine=S && r.player_name===(S.fullId||S.name); return '<div class="kv"'+(mine?' style="font-weight:700"':'')+'><span>'+(i+1)+'. '+esc(r.player_name)+(mine?'（我）':'')+'</span><b>'+esc(r.realm||'')+(r.stage?' · '+esc(r.stage):'')+' · 修为 '+Math.floor(+r.cultivation||0)+'</b></div>'; }).join('')+'</div>'; }
+return html+localScoreHTML();
 }
-function openBoard(){ if(window.S&&typeof ensureSaveFields==='function'){try{ensureSaveFields()}catch(e){}} document.getElementById('boardModal').classList.remove('hidden'); renderLocalBoard(); }
-window.openBoard=openBoard; window.shareMyScore=shareMyScore; window.renderLocalBoard=renderLocalBoard;
-document.getElementById('btnBoard').onclick=openBoard;
-document.getElementById('btnShareScore').onclick=function(){ openBoard(); shareMyScore(); };
-document.getElementById('btnBoardShare').onclick=shareMyScore;
-document.getElementById('btnBoardClose').onclick=function(){ document.getElementById('boardModal').classList.add('hidden'); };
+var lastBoardRows=null, uploadingNow=false;
+function boardPendingUpload(){ try{ return localStorage.getItem(PENDING_UPLOAD_KEY)==='1'; }catch(e){ return false; } }
+function setBoardPending(v){ try{ if(v)localStorage.setItem(PENDING_UPLOAD_KEY,'1'); else localStorage.removeItem(PENDING_UPLOAD_KEY); }catch(e){} }
+function supaFailText(kind,status){
+if(kind==='timeout') return '连接超时：排行榜服务器响应太慢';
+if(kind==='http') return '排行榜服务器返回异常（HTTP '+status+'）';
+return '无法连接排行榜服务器：当前网络直达不了该服务地址';
+}
+function supaFetch(path,opts){
+var attempts=3;
+function once(n){
+var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+var timer=ctrl?setTimeout(function(){ctrl.abort()},12000):null;
+var o={method:opts.method||'GET',headers:opts.headers};
+if(opts.body!==undefined)o.body=opts.body;
+if(ctrl)o.signal=ctrl.signal;
+return fetch(SUPA_URL+path,o).then(function(res){
+if(timer)clearTimeout(timer);
+if(!res.ok){ var e=new Error('http'); e.kind='http'; e.status=res.status; throw e; }
+return opts.noJson?null:res.json();
+}).catch(function(err){
+if(timer)clearTimeout(timer);
+var e2=new Error('fail');
+if(err&&err.kind==='http'){ e2.kind='http'; e2.status=err.status; }
+else if((err&&err.name==='AbortError')||(ctrl&&ctrl.signal&&ctrl.signal.aborted)) e2.kind='timeout';
+else e2.kind='network';
+if(e2.kind!=='http'&&n<attempts) return new Promise(function(res2){ setTimeout(res2,900*n); }).then(function(){ return once(n+1); });
+throw e2;
+});
+}
+return once(1);
+}
+function fetchBoard(){
+var body=document.getElementById('boardBody'); if(!body)return;
+body.innerHTML='<p class="small">正在拉取共享榜…（弱网下会自动重试）</p>';
+supaFetch('/rest/v1/leaderboard?select=*&order=created_at.desc&limit=500',{headers:supaHeaders()})
+.then(function(rows){ lastBoardRows=Array.isArray(rows)?rows:[]; body.innerHTML=renderBoard(lastBoardRows); })
+.catch(function(e){
+var cached=lastBoardRows? '<p class="small">以下为本会话上次成功拉取的榜单，可能不是最新。</p>'+renderBoard(lastBoardRows):'';
+body.innerHTML='<p style="color:var(--bad)"><b>暂时拉不到共享榜</b>：'+supaFailText(e&&e.kind,e&&e.status)+((e&&e.kind)==='http'?'':'（已自动尝试 3 次）')+'。可切换 Wi-Fi / 流量后点「刷新排行榜」重试。你的本机成绩不受影响。</p>'+cached+localScoreHTML();
+});
+}
+function setUploadStatus(msg,ok){ ['boardUploadStatus','uploadStatus'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.textContent=msg; el.style.color=ok===true?'var(--good)':ok===false?'var(--bad)':''; } }); }
+function uploadScore(){
+if(!S){ setUploadStatus('请先创建角色再上传成绩。',false); showToast('先创建角色，再上传成绩'); return; }
+if(uploadingNow) return;
+uploadingNow=true;
+var row=myScoreRow();
+setUploadStatus('正在上传成绩…（弱网下会自动重试）');
+supaFetch('/rest/v1/leaderboard',{method:'POST',headers:supaHeaders({'Content-Type':'application/json','Prefer':'return=minimal'}),body:JSON.stringify(row),noJson:true})
+.then(function(){ uploadingNow=false; setBoardPending(false);
+setUploadStatus('✅ 已同步到共享榜：'+row.player_name+' · '+row.realm+row.stage+' · 修为 '+row.cultivation+'。朋友刷新排行榜就能看到。', true);
+showToast('☁️ 成绩已同步到共享榜');
+log('🏆 成绩已上传到共享排行榜（'+row.realm+row.stage+' · 修为 '+row.cultivation+'）。','good');
+var bm=document.getElementById('boardModal'); if(bm&&!bm.classList.contains('hidden')) fetchBoard();
+})
+.catch(function(e){ uploadingNow=false; setBoardPending(true);
+setUploadStatus('❌ 上传失败：'+supaFailText(e&&e.kind,e&&e.status)+((e&&e.kind)==='http'?'':'（已自动尝试 3 次）')+'。你的本机成绩不受影响，请切换 Wi-Fi / 流量后点「上传我的成绩」重试；下次打开排行榜也会自动重试。',false);
+showToast('❌ 上传失败，本机成绩不受影响，请重试');
+log('🏆 成绩上传失败：'+supaFailText(e&&e.kind,e&&e.status)+'，本机成绩不受影响，下次打开排行榜会自动重试。','bad'); });
+}
+function shareMyScore(){ uploadScore(); }
+function renderLocalBoard(){ fetchBoard(); }
+function openBoard(){ if(window.S&&typeof ensureSaveFields==='function'){try{ensureSaveFields()}catch(e){}} document.getElementById('boardModal').classList.remove('hidden'); fetchBoard(); if(boardPendingUpload()&&S&&!uploadingNow){ setUploadStatus('检测到上次未同步的成绩，正在自动重试上传…'); setTimeout(function(){ uploadScore(); },400); } }
+window.openBoard=openBoard; window.uploadScore=uploadScore; window.shareMyScore=shareMyScore; window.fetchBoard=fetchBoard; window.renderLocalBoard=renderLocalBoard;
+var _bb=document.getElementById('btnBoard'); if(_bb)_bb.onclick=openBoard;
+var _bu=document.getElementById('btnUploadScore'); if(_bu)_bu.onclick=function(){ openBoard(); uploadScore(); };
+var _bs=document.getElementById('btnShareScore'); if(_bs)_bs.onclick=function(){ openBoard(); uploadScore(); };
+var _bbu=document.getElementById('btnBoardUpload'); if(_bbu)_bbu.onclick=uploadScore;
+var _bbr=document.getElementById('btnBoardRefresh'); if(_bbr)_bbr.onclick=fetchBoard;
+var _bbc=document.getElementById('btnBoardClose'); if(_bbc)_bbc.onclick=function(){ document.getElementById('boardModal').classList.add('hidden'); };
 
 /* INIT: only load THIS browser's own save; otherwise creation screen */
-var _incomingScore=parseIncomingScore();
-if(_incomingScore){ window._incomingScore=_incomingScore; try{ localStorage.setItem(PENDING_SCORE_KEY,JSON.stringify(_incomingScore)); }catch(e){} stripScoreHash(); }
+consumePendingScore(); /* 旧成绩链接登记已停用，仅清理遗留待登记数据 */
 var existing=load();
 if(existing && existing.name){ var _bootSavedAt=existing.savedAt||0; S=existing; startGame(false); /* 开机渲染会调用 save() 把 savedAt 刷成当前时间，若不还原，IndexedDB 里真正更新的快照会因时间戳变小而永远选不中（回档旧分支的根源之一）。还原为加载时的原始时间戳，让后续双备份按时间戳选最新真正生效；离线结算已实际改动进度时保留新时间戳。 */ try{ var _lastLog=(S.logs&&S.logs.length)?String(S.logs[S.logs.length-1]):''; var _settled=_lastLog.indexOf('离线结算')>=0; if(window.S&&!_settled&&_bootSavedAt){ S.savedAt=_bootSavedAt; localStorage.setItem(KEY,JSON.stringify(S)); } }catch(e){} }
-else { document.getElementById('createScreen').classList.remove('hidden'); if(_incomingScore){ showToast('收到「'+_incomingScore.n+'」的成绩分享，创建你的角色后会自动登记到排行榜'); } }
+else { document.getElementById('createScreen').classList.remove('hidden'); }
 </script>
 <script>
 var GONG_EL={'引气诀':'木','青木长生功':'木','烈阳真经':'火','玄水诀':'水','厚土功':'土','紫霄雷法':'雷','太虚剑诀':'金','混元无极功':'土'};
