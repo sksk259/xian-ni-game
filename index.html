@@ -402,6 +402,13 @@ if(cdLeft('battleRest')>0){ log('战斗后休整中，还需 '+cdLeft('battleRes
 S.sta-=STA_COST.battle;
 if(mon&&typeof mon==='object'){
 battle={name:mon.name,icon:mon.icon||'👹',bg:mon.bg||'#e8e0c8',hp:mon.hp,max:mon.hp,atk:mon.atk,def:mon.def||0,realm:mon.realm,sub:mon.sub,mapName:mon.mapName||'',dropsText:mon.drops||'',stoneRange:mon.stone||null,herbDrop:mon.herb||0,fragDrop:mon.frag||0,expRange:mon.exp||null,dropKind:mon.kind||'wild',isHunt:true,round:1,logs:[],spellCd:0,pillCd:0,pillUsed:0,charged:false,nextHeavy:false,intent:'atk'}; battle.intent=rollIntent(battle); if(mon.mapName)S.lastMap=mon.mapName;
+/* 战力同步：玩家攻击超过该境界模板期望（基础攻击公式、功法按 realm*2+1 层计、不含法宝/体质/灵根加成）25% 以上时，对手随之增强：超出部分每 1 倍期望，气血 +100%、攻防 +50%，气血最多 +60%、攻防最多 +30% 封顶。接近期望攻击的玩家（含真新手）不受影响；只改本场战斗数值，不改掉落与经验。 */
+try{ var _expAtk=14+battle.realm*35+battle.sub*8+(battle.realm*2+1)*6; var _ratio=atk(S)/Math.max(1,_expAtk);
+ if(_ratio>1.25){ var _over=_ratio-1.25, _hpB=Math.min(.60,_over), _adB=Math.min(.30,_over/2);
+  battle.max=Math.floor(battle.max*(1+_hpB)); battle.hp=battle.max; battle.atk=Math.floor(battle.atk*(1+_adB)); battle.def=Math.floor((battle.def||0)*(1+_adB)); battle.syncPct=Math.round(_hpB*100);
+  bpush('⚖️ 战力同步：你的攻击约为此地模板期望的 '+Math.round(_ratio*100)+'% ，'+battle.name+' 随之增强——气血 +'+Math.round(_hpB*100)+'% · 攻击/防御 +'+Math.round(_adB*100)+'%（封顶内）。');
+ }
+}catch(e){}
 bpush('⚔️ 你来到'+(battle.mapName||'野外')+'，对上 '+battle.name+'（'+REALMS[battle.realm]+SUBS[battle.sub]+' · 气血 '+battle.max+' · 攻击 '+battle.atk+' · 防御 '+battle.def+'）。战斗开始！');
 } else {
 var hp=Math.floor((105+S.realm*170)*rnd(1,1.25)); battle={name:String(mon),icon:'⚔️',bg:'#e8e0c8',hp:hp,max:hp,atk:Math.floor(13+S.realm*24*rnd(1,1.2)),def:Math.floor(3+S.realm*5),realm:S.realm,sub:S.sub,isHunt:false,round:1,logs:[],spellCd:0,pillCd:0,pillUsed:0,charged:false,nextHeavy:false,intent:'atk'}; battle.intent=rollIntent(battle);
@@ -415,6 +422,8 @@ var INTENT_TEXT={atk:'普通攻击',crit:'杀意暴涨，下一次攻击可能�
 function rollIntent(b){
  if(!b)return 'atk'; if(b.nextHeavy)return 'heavy';
  var r=Math.random();
+ /* Boss 被动意图（蓄力+防御）占比由约 25% 降到约 12%，让 Boss 多数回合真正出手；野怪/修士意图分布不变 */
+ if(b.dropKind==='boss'){ if(r<.06)return 'charge'; if(r<.12)return 'defend'; if(r<.24&&b.hp<b.max*.7)return 'heal'; if(r<.38)return 'crit'; return 'atk'; }
  if(r<.13)return 'charge'; if(r<.25)return 'defend'; if(r<.36&&b.hp<b.max*.7)return 'heal'; if(r<.50)return 'crit'; return 'atk';
 }
 function applyDeath(oppName,loc){
@@ -635,11 +644,15 @@ var MAPS=[
 var OPP_BASE=[{hp:95,atk:14,def:4},{hp:275,atk:37,def:12},{hp:565,atk:75,def:23},{hp:1030,atk:119,def:38},{hp:1760,atk:183,def:58},{hp:2560,atk:252,def:80},{hp:3120,atk:292,def:94},{hp:3680,atk:348,def:108},{hp:4420,atk:405,def:128},{hp:5000,atk:450,def:140}];
 function mkOpp(name,icon,bg,realm,sub,scale,kind){
  realm=Math.max(0,Math.min(9,realm)); sub=Math.max(0,Math.min(3,sub)); var b=OPP_BASE[realm];
- var hp=Math.floor(b.hp*scale*(1+sub*.09)), atk2=Math.floor(b.atk*(kind==='boss'?scale*.82:scale)*(1+sub*.07)), def=Math.floor(b.def*scale*(1+sub*.06));
- var s0=Math.max(3,Math.floor(hp/16)), s1=Math.max(s0+3,Math.floor(hp/8));
+ /* 强度系数（平衡调整）：Boss 气血×1.9 / 攻击×1.5（去掉旧的 0.82 攻击折扣）/ 防御×1.7；修士（原著人物）气血×1.62 / 攻击×1.45 / 防御×1.55——明显强于同境界野怪（最高×1.18）、接近但仍低于 Boss；野怪沿用传入的 scale 不变 */
+ var cs= kind==='boss'?{h:1.9,a:1.5,d:1.7} : kind==='npc'?{h:1.62,a:1.45,d:1.55} : {h:scale,a:scale,d:scale};
+ var hp=Math.floor(b.hp*cs.h*(1+sub*.09)), atk2=Math.floor(b.atk*cs.a*(1+sub*.07)), def=Math.floor(b.def*cs.d*(1+sub*.06));
+ /* 掉落灵石与经验仍按旧强度口径计算（Boss 1.5 / 修士 1.18 / 野怪原 scale），本次调强不改掉落和经验 */
+ var lootHp=Math.floor(b.hp*(kind==='boss'?1.5:kind==='npc'?1.18:scale)*(1+sub*.09));
+ var s0=Math.max(3,Math.floor(lootHp/16)), s1=Math.max(s0+3,Math.floor(lootHp/8));
  var herb=Math.max(1,Math.floor(1+realm/2)), frag=kind==='boss'?2:(kind==='npc'?1:0);
  var drops= kind==='boss'?('灵石 '+s0+'-'+s1+' 必掉 · 必掉1件稀有（灵草/丹药/灵石大包） · 法宝碎片20% · 完整法宝5%') : kind==='npc'?('灵石 '+s0+'-'+s1+' 必掉 · 功法残卷10% · 法宝碎片8%') : ('灵石 '+s0+'-'+s1+' 必掉 · 灵草30% · 法宝碎片5%');
- return {name:name,icon:icon,bg:bg,realm:realm,sub:sub,hp:hp,atk:atk2,def:def,drops:drops,stone:[s0,s1],herb:herb,frag:frag,exp:[Math.floor(hp*.28),Math.floor(hp*.44)],kind:kind||'wild',isBoss:kind==='boss',isNpc:kind==='npc'};
+ return {name:name,icon:icon,bg:bg,realm:realm,sub:sub,hp:hp,atk:atk2,def:def,drops:drops,stone:[s0,s1],herb:herb,frag:frag,exp:[Math.floor(lootHp*.28),Math.floor(lootHp*.44)],kind:kind||'wild',isBoss:kind==='boss',isNpc:kind==='npc'};
 }
 var REGION_DEFS={
 hengyue:[{name:'外门山道',wild:[['山道青狼','🐺','#e3e7ec'],['林间灵猴','🐒','#d7ecc8'],['山道藤妖','🪴','#d2e8d0']],boss:{name:'后山狼王',icon:'🐺'},npcs:[['张虎',0,1,'🧑'],['王浩',0,0,'🧑']]},{name:'内门灵药园',wild:[['药园灵蜂','🐝','#fdf0c2'],['守园青蛇','🐍','#d2e8d0'],['灵药藤妖','🌿','#d7ecc8']],boss:{name:'药园巨蟒',icon:'🐍'},npcs:[['黄龙真人',1,0,'🧙'],['孙大柱',0,3,'🧑']]},{name:'后山禁地',wild:[['禁地石龟','🐢','#d9e8d2'],['后山血蝠','🦇','#dcd6ea'],['禁地阴魂','👻','#e2ddf0']],boss:{name:'恒岳禁地古兽',icon:'🦁'},npcs:[['马良',0,2,'🧑']]}],
