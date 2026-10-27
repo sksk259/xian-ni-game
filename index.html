@@ -122,7 +122,7 @@ body[data-view="home"] .prof-bag{display:none!important}
 <h3>体力</h3><div class="bar sta"><i id="staBar"></i></div><p class="small" id="staText"></p>
 <div id="attrs"></div>
 <h3>🎒 储物袋</h3><div id="bag"></div>
-<h3>🗡️ 法宝</h3><div id="treasure"></div>
+<h3>⚔️ 装备栏（武器 · 防具 · 饰品 · 法宝）</h3><div id="treasure"></div>
 </aside>
 <!-- CENTER -->
 <main class="card" id="colMain"><h2>📖 修行日志</h2><div class="log" id="log"></div>
@@ -362,7 +362,7 @@ function alchemy(){ if(traveling()){log('🧭 赶路中，不能炼丹，先到�
 var EVENTS=[
 {t:'山中发现一株年份灵草',c:[['采摘',function(){S.herb+=2;return '灵草+2'}],['留待日后',function(){S.ji+=1;return '机缘+1'}]]},
 {t:'一位受伤散修向你求助',c:[['赠回血丹/灵草救他',function(){if(S.herb>0)S.herb--; S.ji+=2; S.stone+=8; return '他赠你灵石8，机缘+2'}],['绕道而行',function(){return '你选择明哲保身，无事发生'}]]},
-{t:'古修洞府残阵，隐有宝光',c:[['冒险破阵',function(){if(Math.random()<.5){var t=pick(TREASURES); if(!S.treasure||t.atk>S.treasure.atk)S.treasure=t; return '获得法宝：'+t.n;} S.hp-=30; return '被残阵所伤，气血-30'}],['记下位置离开',function(){S.wu+=1;return '悟性+1'}]]},
+{t:'古修洞府残阵，隐有宝光',c:[['冒险破阵',function(){if(Math.random()<.5){var t=pick(TREASURES); if(typeof addItemToInv==='function')addItemToInv(t,0); else if(!S.treasure||t.atk>S.treasure.atk)S.treasure=t; return '获得装备/法宝：'+t.n+'（已入库，去档案装备栏点「装备」穿上）';} S.hp-=30; return '被残阵所伤，气血-30'}],['记下位置离开',function(){S.wu+=1;return '悟性+1'}]]},
 {t:'坊市有人低价出售残卷',c:[['花5灵石买下',function(){if(S.stone>=5){S.stone-=5;S.gongLv++;return '残卷竟是功法心得，功法+1层！'}return '灵石不足，错失良机'}],['不买',function(){return '你摇摇头离开了'}]]},
 {t:'灵泉涌现，灵气浓郁',c:[['在此修炼',function(){gainExp(50);return '修为大涨'}],['装取泉水',function(){S.pills.ju++;return '获得聚灵丹×1（泉水凝丹）'}]]},
 {t:'妖兽幼崽被困陷阱',c:[['放生',function(){S.ji+=2;return '幼崽母亲衔来灵草致谢，机缘+2';}],['无视',function(){return '你转身离去'}]]},
@@ -547,7 +547,7 @@ if(chargedUsed){ dmg*=2; }
 battle.hp-=dmg; var msg2='你'+(a==='spell'?'施展术法':'出手')+(chargedUsed?'（蓄力翻倍：最终伤害×2）':'')+'，造成 '+dmg+' 伤害'+((battle.intent==='defend')?'（对方防御，伤害减半）':'')+'。敌方余 '+Math.max(0,Math.ceil(battle.hp))+' 气血。'; bpush(msg2); log(msg2);
 if(battle.hp<=0){ var wasHunt3=battle.isHunt, en3=battle.name, dropsTxt=battle.dropsText||'', kind3=battle.dropKind||'wild';
 var g, stoneGain, herbGain=0, fragGain=0, extraItems=[];
-if(wasHunt3){ var rd=rollHuntDrops(battle); g=rd.exp; stoneGain=rd.stone; herbGain=rd.herb; fragGain=rd.frag; window._rdSplit=rd; rd.items.forEach(function(it){ if(it==='scroll'){ S.gongLv++; extraItems.push('功法残卷（功法+1层）'); } else if(it==='treasure'){ var tt=pick(TREASURES); if(!S.treasure||tt.atk>S.treasure.atk){ S.treasure=tt; extraItems.push('完整法宝 '+tt.n); } else { extraItems.push('完整法宝未超过当前法宝，折为碎片（已计入下方碎片数）'); fragGain+=2; } } else extraItems.push(it); }); }
+if(wasHunt3){ var rd=rollHuntDrops(battle); g=rd.exp; stoneGain=rd.stone; herbGain=rd.herb; fragGain=rd.frag; window._rdSplit=rd; rd.items.forEach(function(it){ if(it==='scroll'){ S.gongLv++; extraItems.push('功法残卷（功法+1层）'); } else if(it==='treasure'){ var tt=pick(TREASURES); if(typeof addItemToInv==='function'){ addItemToInv(tt,0); extraItems.push('完整装备/法宝 '+tt.n+'（已入库，去档案装备栏点「装备」穿上，不会自动替换）'); } else if(!S.treasure||tt.atk>S.treasure.atk){ S.treasure=tt; extraItems.push('完整法宝 '+tt.n); } else { extraItems.push('完整法宝未超过当前法宝，折为碎片（已计入下方碎片数）'); fragGain+=2; } } else extraItems.push(it); }); }
 else { var er2=expRangeFor(S.realm,S.sub,'wild'); g=ri(er2[0],er2[1]); stoneGain=ri(3,12); if(Math.random()<.30)herbGain=1; if(Math.random()<.05)fragGain=1; }
 gainExp(g); S.stone+=stoneGain; if(herbGain)S.herb+=herbGain; if(fragGain)S.frag=(S.frag||0)+fragGain; S.flags=S.flags||{}; S.flags.battle=true; S.guideKill=true; S.totalKills=(S.totalKills||0)+1; if(kind3==='npc'){ S.npcWins=(S.npcWins||0)+1; log('🧙 你战胜了原著修士 '+en3+'（原著NPC获胜次数 '+S.npcWins+'）。','good'); } if(battle===null){} try{ S.codex=S.codex||{kills:{},maps:{},cities:{}}; S.codex.kills[en3]=(S.codex.kills[en3]||0)+1; if(kind3==='boss')S.bossKills=(S.bossKills||0)+1; }catch(e){}
 var _expActual=(S.origin&&S.origin.n==='散修后人')?Math.round(g*1.10):g; var _expSeg=(_expActual!==g)?('修为 基础+'+g+' · 出身加成+'+(_expActual-g)+'（散修后人+10%）= 实际+'+_expActual):('修为 +'+g); var _rd2=window._rdSplit||null; window._rdSplit=null; var _stoneSeg=(_rd2&&_rd2.stoneBonus>0)?('灵石 基础+'+_rd2.stoneBase+' · 灵石大包+'+_rd2.stoneBonus+' = 共+'+stoneGain):('灵石 +'+stoneGain); var _herbSeg=''; if(herbGain){ _herbSeg=(_rd2&&_rd2.herbBonus>0)?(' · 灵草 基础+'+_rd2.herbBase+' · 灵草大包+'+_rd2.herbBonus+' = 共+'+herbGain):(' · 灵草 +'+herbGain); }
@@ -2336,6 +2336,186 @@ applyMusicPanel(); refreshMusicChrome(); startCodeReminder();
    });
  },600);
 })();
+</script>
+<script>
+/* ===== 装备/法宝分离包：四格装备栏（武器·防具·饰品·法宝）+ 逐件库存 + 逐件强化 + 新成功率 + 幸运符六档与防爆符叠加 =====
+   规则落实：
+   - 法宝是法宝、装备是装备：每件物品按类型进唯一槽位（武器/防具/饰品/法宝），四格各一件，可装备/卸下。
+   - 购买与掉落先进库存（背包），不自动替换、不自动装备；在档案「装备栏」点「装备」才穿上，换下自动回库存。
+   - 强化等级按件存储（每件物品自带 enh），换装备不串级；旧存档的法宝与全局强化等级原样迁移到该件上，不清零。
+   - 每级强化加成 = 0.08×该件基础攻击 + 2；面板有 +1~+15 逐级表，拆出「基础攻击 + 强化加成 = 当前攻击」。
+   - 防具（及一切带气血的已装备物品）的气血真正计入气血上限；防具气血的 20% 另转化为防御。
+   - 成功率：+1 99% / +2 80% / +3 70% / +4 60% / +5 55% / +6 48% / +7 38% / +8 27% / +9 18% / +10 15% / +11 10% / +12 9% / +13 8% / +14 7% / +15 6%。
+   - 费用：30 + 当前等级×20 灵石（不变）。+8 起失败有爆毁率（+8:15% … +15:50%）。
+   - 防爆符与幸运符可同时使用：幸运符分 10/20/30/40/50/60 六档（越高越贵、越高档城市才有售），防爆符单独勾选，两者可叠加。 */
+window.ENH_PROB=[99,80,70,60,55,48,38,27,18,15,10,9,8,7,6];
+ENH_BURST={8:15,9:20,10:25,11:30,12:35,13:40,14:45,15:50};
+var SLOT_DEFS=[['weapon','武器'],['armor','防具'],['accessory','饰品'],['fabao','法宝']];
+var SLOT_LABEL={weapon:'武器',armor:'防具',accessory:'饰品',fabao:'法宝'};
+function isFabaoName(n){ return /葫芦|钟|鼎/.test(n)||n==='聚灵珠'; }
+var _catMap=null;
+function catalogCatMap(){ if(_catMap)return _catMap; _catMap={}; try{ (CATALOG['法宝阁']||[]).forEach(function(it){ if(it.tn)_catMap[it.tn]=it.cat; }); }catch(e){} return _catMap; }
+function slotOfName(n){ if(isFabaoName(n))return 'fabao'; var c=catalogCatMap()[n]; if(c==='武器')return 'weapon'; if(c==='防具')return 'armor'; if(c==='饰品')return 'accessory'; if(/盾|甲|衣|袍|护心镜/.test(n))return 'armor'; if(/靴|簪|戒|坠|腰带|铃铛|佩|镯/.test(n))return 'accessory'; return 'weapon'; }
+function baseItem(name){ var f=null; TREASURES.forEach(function(t){ if(t.n===name)f=t; }); return f; }
+function fmtN(x){ return String(Math.round((+x||0)*100)/100); }
+function enhPerLevel(it){ return (it.atk||0)*0.08+2; }
+function enhBonus(it){ return enhPerLevel(it)*((it&&it.enh)||0); }
+function itemCurAtk(it){ return (it.atk||0)+enhBonus(it); }
+function mkItemInstance(name,enh,expires){ var b=baseItem(name); if(!b)return null; if(!S._itemSeq)S._itemSeq=0; S._itemSeq++; return {id:'it'+Date.now().toString(36)+'_'+S._itemSeq,n:b.n,atk:b.atk||0,hp:b.hp||0,slot:slotOfName(b.n),enh:Math.max(0,Math.min(15,Math.floor(+enh||0))),exp:expires||0}; }
+function findItem(id){ if(!S||!Array.isArray(S.inv))return null; for(var i=0;i<S.inv.length;i++)if(S.inv[i].id===id)return S.inv[i]; return null; }
+function equippedItem(slot){ if(!S||!S.equip)return null; return findItem(S.equip[slot]); }
+function eachEquipped(s,fn){ if(!s||!Array.isArray(s.inv)||!s.equip)return; SLOT_DEFS.forEach(function(sd){ var id=s.equip[sd[0]]; if(!id)return; for(var i=0;i<s.inv.length;i++)if(s.inv[i].id===id){ fn(s.inv[i],sd[0]); break; } }); }
+function equipHp(s){ var v=0; eachEquipped(s,function(it){ v+=it.hp||0; }); return v; }
+function armorDefBonus(){ var a=equippedItem('armor'); return a?Math.floor((a.hp||0)*0.2):0; }
+function syncTreasureMirror(){ if(!S)return; var f=equippedItem('fabao'); S.treasure=f?{n:f.n,atk:f.atk,hp:f.hp||0}:null; var mx=0; if(Array.isArray(S.inv))S.inv.forEach(function(it){ if((it.enh||0)>mx)mx=it.enh||0; }); if((!S.inv||!S.inv.length)&&(S._pendingEnh||0)>mx)mx=S._pendingEnh||0; S.enhanceLv=mx; }
+function syncAllEquip(){ syncTreasureMirror(); if(window.S&&S.hp>maxHp(S))S.hp=maxHp(S); }
+function validateInv(){ if(!S)return; if(!Array.isArray(S.inv))S.inv=[]; var seen={}; S.inv=S.inv.filter(function(it){ if(!it||!it.n)return false; var b=baseItem(it.n); if(!b)return false; if(!it.id||seen[it.id])it.id='it'+Date.now().toString(36)+'_'+Math.floor(Math.random()*1e6); seen[it.id]=1; it.atk=b.atk||0; it.hp=b.hp||0; it.slot=slotOfName(b.n); it.enh=Math.max(0,Math.min(15,Math.floor(+it.enh||0))); it.exp=Math.max(0,+it.exp||0); return true; }); if(!S.equip||typeof S.equip!=='object')S.equip={weapon:null,armor:null,accessory:null,fabao:null}; SLOT_DEFS.forEach(function(sd){ if(!findItem(S.equip[sd[0]]))S.equip[sd[0]]=null; }); }
+function migrateEquip(){ if(!S)return;
+ ['luck30','luck40','luck50','luck60'].forEach(function(k){ if(S.fu[k]===undefined)S.fu[k]=0; S.fu[k]=Math.max(0,Math.floor(+S.fu[k]||0)); });
+ if(S.fu.luck10===undefined)S.fu.luck10=S.fu.luckS||0; if(S.fu.luck20===undefined)S.fu.luck20=S.fu.luckB||0;
+ S.fu.luck10=Math.max(Math.floor(+S.fu.luck10||0),Math.floor(+S.fu.luckS||0)); S.fu.luckS=S.fu.luck10;
+ S.fu.luck20=Math.max(Math.floor(+S.fu.luck20||0),Math.floor(+S.fu.luckB||0)); S.fu.luckB=S.fu.luck20;
+ if(!S._equipMigrated){ S._equipMigrated=true; S.inv=[]; S.equip={weapon:null,armor:null,accessory:null,fabao:null};
+  if(S.treasure&&S.treasure.n){ var it=mkItemInstance(S.treasure.n,S.enhanceLv||0,(S.swordFromShop&&S.swordExpires)?S.swordExpires:0); if(it){ S.inv.push(it); S.equip[it.slot]=it.id; } }
+  else if((S.enhanceLv||0)>0){ S._pendingEnh=Math.max(0,Math.min(15,Math.floor(+S.enhanceLv||0))); } /* 旧存档无法宝但有强化等级：等级不丢，记为待附等级，第一件入库物品自动继承 */
+ }
+ validateInv(); syncAllEquip();
+}
+var _ensurePrev=ensureSaveFields;
+ensureSaveFields=function(){ _ensurePrev(); migrateEquip(); };
+function addItemToInv(baseOrName,expires){ if(!S)return null; ensureSaveFields(); var name=typeof baseOrName==='string'?baseOrName:(baseOrName&&baseOrName.n); var it=mkItemInstance(name,0,expires||0); if(!it)return null; if((S._pendingEnh||0)>0){ it.enh=S._pendingEnh; S._pendingEnh=0; log('🔨 旧存档保留的强化等级 +'+it.enh+' 已附到这件物品上（按件存储，不清零）。','good'); } S.inv.push(it); validateInv(); syncAllEquip(); return it; }
+window.addItemToInv=addItemToInv;
+function removeItemById(id){ if(!S||!Array.isArray(S.inv))return; S.inv=S.inv.filter(function(it){return it.id!==id}); SLOT_DEFS.forEach(function(sd){ if(S.equip[sd[0]]===id)S.equip[sd[0]]=null; }); syncAllEquip(); }
+function equipItemById(id){ var it=findItem(id); if(!it)return; S.equip[it.slot]=it.id; syncAllEquip(); log('⚔️ 装备'+SLOT_LABEL[it.slot]+'：'+it.n+'（基础攻击 '+it.atk+(it.enh?' · 强化 +'+it.enh+'，当前攻击 '+fmtN(itemCurAtk(it)):'')+(it.hp?' · 气血 +'+it.hp+' 已计入气血上限':'')+'）。换下的同类物品已回库存。','good'); showToast('⚔️ 已装备'+SLOT_LABEL[it.slot]+'：'+it.n); save(); render(); }
+function unequipSlot(slot){ var it=equippedItem(slot); if(!it)return; S.equip[slot]=null; syncAllEquip(); log('🎒 已卸下'+SLOT_LABEL[slot]+'：'+it.n+'（回库存，属性加成移除）。'); showToast('🎒 已卸下：'+it.n); save(); render(); }
+/* --- 属性公式覆盖：四格已装备物品全部生效 --- */
+atk=function(s){ s=s||S; var base=14+s.realm*35+s.sub*8+s.gongLv*6; var t=0; eachEquipped(s,function(it){ t+=itemCurAtk(it); }); var m=1+(s.body?s.body.atk:0); if(s.root&&s.root.el==='金')m*=1.10; if(typeof gongComboMult==='function')m*=gongComboMult(s); var v=Math.floor((base+t)*m); if(s.weakUntil&&Date.now()<s.weakUntil)v=Math.floor(v*.8); return v; };
+maxHp=function(s){ return Math.floor((100+s.realm*180+s.sub*40)*(1+(s.body?s.body.hp:0)))+equipHp(s); };
+playerDef=function(){ var v=S.realm*6+S.sub*2+S.gongLv*1.2; if(S.root&&S.root.el==='土')v*=1.10; if(S.body&&S.body.def)v*=(1+S.body.def); v+=armorDefBonus(); return Math.floor(v); };
+/* --- 档案装备栏面板 --- */
+function itemLine(it,equipped){ var days=it.exp?(' · 剩余'+daysLeft(it.exp)+'天'):''; return esc(it.n)+'（'+SLOT_LABEL[it.slot]+'）· 基础攻击 '+it.atk+' + 强化加成 '+fmtN(enhBonus(it))+' = 当前攻击 '+fmtN(itemCurAtk(it))+(it.enh?'（+'+it.enh+'）':'')+(it.hp?' · 气血 +'+it.hp:'')+days+(equipped?' · <b>已装备</b>':''); }
+function renderEquipPanel(){ if(!S)return; var box=document.getElementById('treasure'); if(!box)return; ensureSaveFields();
+ var h='<p class="small" style="margin:0 0 6px">法宝是法宝、装备是装备：四格各穿一件。<b>购买与掉落先进库存，不会自动替换</b>，点「装备」才穿上，换下的自动回库存。已装备物品的气血计入气血上限，防具气血的 20% 另算防御（当前防具防御加成 +'+armorDefBonus()+'）。</p>';
+ SLOT_DEFS.forEach(function(sd){ var it=equippedItem(sd[0]); h+='<div class="kv"><span>'+sd[1]+'</span><b>'+(it?esc(it.n)+' +'+(it.enh||0):'（空）')+'</b></div>'+(it?'<p class="small" style="margin:2px 0 4px">'+itemLine(it,true)+'</p><button style="width:auto;padding:4px 10px;font-size:13px" data-unequip="'+sd[0]+'">卸下'+sd[1]+'</button>':''); });
+ var uneq=(S.inv||[]).filter(function(it){ return !SLOT_DEFS.some(function(sd){ return S.equip[sd[0]]===it.id; }); });
+ h+='<h3 style="margin:10px 0 4px">🎒 库存装备 / 法宝（'+uneq.length+' 件未装备）</h3>';
+ if(!uneq.length)h+='<p class="small" style="margin:0">库存为空：去商店购买或打怪掉落，物品会先到这里。</p>';
+ uneq.forEach(function(it){ h+='<p class="small" style="margin:4px 0 2px">'+itemLine(it,false)+'</p><button style="width:auto;padding:4px 10px;font-size:13px" data-equip="'+it.id+'">装备到'+SLOT_LABEL[it.slot]+'格</button>'; });
+ if(S.scrollExpiries&&S.scrollExpiries.length)h+='<span class="pill">📜 功法残卷加成 ×'+S.scrollExpiries.length+' · 剩余'+Math.min.apply(null,S.scrollExpiries.map(daysLeft))+'天</span>';
+ if(S.talismanExpiries&&S.talismanExpiries.length)h+='<span class="pill">🧧 替死符 · 剩余'+Math.min.apply(null,S.talismanExpiries.map(daysLeft))+'天</span>';
+ box.innerHTML=h;
+ box.querySelectorAll('[data-equip]').forEach(function(b){ b.onclick=function(){ equipItemById(b.getAttribute('data-equip')); }; });
+ box.querySelectorAll('[data-unequip]').forEach(function(b){ b.onclick=function(){ unequipSlot(b.getAttribute('data-unequip')); }; });
+}
+var _renderPrev2=render;
+render=function(){ if(window._deletingSave)return; if(window.S)ensureSaveFields(); _renderPrev2(); try{ renderEquipPanel(); }catch(e){} };
+/* --- 储物袋符箓行覆盖：幸运符六档全显示 --- */
+renderEnhBag=function(){ if(!S)return; var bag=document.getElementById('bag'); if(bag){ bag.insertAdjacentHTML('beforeend','<span class="pill">🪨 初级强化石 ×'+S.enhStones.low+'</span><span class="pill">🪨 中级强化石 ×'+S.enhStones.mid+'</span><span class="pill">🪨 高级强化石 ×'+S.enhStones.high+'</span><span class="pill">🍀 幸运符 10%×'+S.fu.luck10+' · 20%×'+S.fu.luck20+' · 30%×'+(S.fu.luck30||0)+' · 40%×'+(S.fu.luck40||0)+' · 50%×'+(S.fu.luck50||0)+' · 60%×'+(S.fu.luck60||0)+'</span><span class="pill">🛡️ 防爆符 ×'+S.fu.anti+'（可与幸运符同用）</span><span class="pill">⬆️ 直升符 +3×'+S.fu.up3+' / +5×'+S.fu.up5+' / +8×'+S.fu.up8+' / +10×'+S.fu.up10+'</span><span class="pill">💥 狂暴强化石 ×'+S.fu.jump+' · 三连强化符 ×'+S.fu.jumpAdv+'</span>'); } };
+/* --- 到期处理：逐件到期移除（覆盖旧的全局法宝到期） --- */
+var _chkExpPrev=checkExpiries;
+checkExpiries=function(){ if(window.S&&Array.isArray(S.inv)){ var now=Date.now(),changed=false; S.inv.slice().forEach(function(it){ if(it.exp&&now>=it.exp){ removeItemById(it.id); log('⏰ 商店购入的「'+it.n+'」已到期（有效期30天），已从装备栏/库存移除。','bad'); changed=true; } }); if(S.swordFromShop){ S.swordFromShop=false; S.swordExpires=0; } if(changed)syncAllEquip(); } _chkExpPrev(); };
+/* --- 购买：主商店与城内法宝阁的装备/法宝一律先入库 --- */
+var _buyItemPrev=buyItem;
+buyItem=function(id){ if(!S)return; if(['sword','sword_fire','sword_demon','sword_star'].indexOf(id)<0){ _buyItemPrev(id); return; }
+ if(traveling()){ showToast('赶路中不能购物，先到达目的地'); return; }
+ if(allowedShopIds().indexOf(id)<0){ showToast('这里买不到这个：该商品在「'+itemWhere(id)+'」有售'); return; }
+ ensureShopDay(); var lim2=ADV_LIMIT[id]||0; if(lim2>0&&((S.shopCounts[id]||0)>=lim2)){ showToast('今日限购已达上限：该商品每天限购 '+lim2+' 件，明天再来'); return; }
+ var it=null; SHOP.forEach(function(x){ if(x.id===id)it=x; }); if(!it)return;
+ if(S.stone<it.price){ showToast('灵石不够，买不了 '+it.n); return; }
+ var tn={sword:'青锋剑',sword_fire:'赤焰葫芦',sword_demon:'诛仙残剑',sword_star:'混沌钟碎片'}[id];
+ S.stone-=it.price; if(ADV_LIMIT[it.id])S.shopCounts[it.id]=(S.shopCounts[it.id]||0)+1;
+ ensureSaveFields(); var inst=addItemToInv(tn,Date.now()+30*86400000);
+ S.guideBuy=true; S.qBuy=true;
+ if(S.origin&&S.origin.n==='修仙世家子弟'){ var rf=Math.floor(it.price*0.1); if(rf>0)S.stone+=rf; }
+ log('🛒 买下 '+it.n+'，已入库（'+(inst?SLOT_LABEL[inst.slot]:'')+' · 基础攻击 '+(inst?inst.atk:0)+'），不会自动装备：去档案「装备栏」点「装备」穿上。灵石 -'+it.price+'（余 '+S.stone+'）。','good');
+ showToast('🛒 购买成功：'+tn+' 已入库，去装备栏装备'); save(); render();
+};
+var _buyCityPrev=buyCityItem;
+buyCityItem=function(id){ if(!S)return; var it=catItemById(id); if(!it||it.kind!=='treasure'){ _buyCityPrev(id); return; }
+ ensureSaveFields(); if(traveling()){ showToast('赶路中不能购物，先到达目的地'); return; }
+ if(S.stone<it.price){ showToast('灵石不够，买不了 '+it.n); return; }
+ S.stone-=it.price; var inst=addItemToInv(it.tn,Date.now()+30*86400000);
+ S.guideBuy=true; S.qBuy=true;
+ if(S.origin&&S.origin.n==='修仙世家子弟'){ var rf2=Math.floor(it.price*0.1); if(rf2>0)S.stone+=rf2; }
+ log('🛒 买下 '+it.n+'，已入库（'+(inst?SLOT_LABEL[inst.slot]:'')+' · 基础攻击 '+(inst?inst.atk:0)+'），不会自动装备：去档案「装备栏」点「装备」穿上。灵石 -'+it.price+'（余 '+S.stone+'）。','good');
+ showToast('🛒 购买成功：'+it.tn+' 已入库，去装备栏装备'); save(); render();
+};
+/* --- 商店文案与幸运符六档上架（既有商品价格不动） --- */
+try{ SHOP.forEach(function(it){ if(['sword','sword_fire','sword_demon','sword_star'].indexOf(it.id)>=0)it.desc=it.desc.replace('立即装备','先入库 · 去装备栏装备'); }); }catch(e){}
+try{ (CATALOG['法宝阁']||[]).forEach(function(it){ if(it.tn)it.n=slotOfName(it.tn)==='fabao'?'法宝 · '+it.tn:slotOfName(it.tn)==='weapon'?'武器 · '+it.tn:slotOfName(it.tn)==='armor'?'防具 · '+it.tn:'饰品 · '+it.tn; });
+ (CATALOG['杂货铺']||[]).forEach(function(it){ if(it.id==='c_x5'){ it.n='幸运符 · 10%'; it.desc='强化用 · 成功率+10% · 可与防爆符同时使用（选符时消耗）'; } if(it.id==='c_x7'){ it.n='幸运符 · 20%'; it.desc='强化用 · 成功率+20% · 可与防爆符同时使用（选符时消耗） · 朱雀国起有售'; } if(it.id==='c_x6'){ it.desc='强化用 · 本次失败不爆，只掉级（+8起强烈推荐）· 可与幸运符同时使用'; } });
+ CATALOG['杂货铺'].push(
+ {id:'c_x14',n:'幸运符 · 30%',price:450,cat:'消耗品',tier:2,kind:'fu',fk:'luck30',amt:1,desc:'强化用 · 成功率+30% · 可与防爆符同时使用 · 越高档越稀有：中级城（朱雀国）起有售'},
+ {id:'c_x15',n:'幸运符 · 40%',price:800,cat:'消耗品',tier:3,kind:'fu',fk:'luck40',amt:1,desc:'强化用 · 成功率+40% · 可与防爆符同时使用 · 高级城（天妖郡）起有售'},
+ {id:'c_x16',n:'幸运符 · 50%',price:1400,cat:'消耗品',tier:4,kind:'fu',fk:'luck50',amt:1,desc:'强化用 · 成功率+50% · 可与防爆符同时使用 · 顶级城（天运星）专属'},
+ {id:'c_x17',n:'幸运符 · 60%',price:2200,cat:'消耗品',tier:4,kind:'fu',fk:'luck60',amt:1,desc:'强化用 · 成功率+60% · 可与防爆符同时使用 · 顶级城（天运星）专属 · 最稀有最贵'});
+}catch(e){}
+/* --- 强化系统覆盖：逐件选择 + 新概率 + 幸运/防爆可叠加 + 逐级加成表 --- */
+window._enhItemId=null; window._enhLuck=0; window._enhAnti=false;
+function enhSelItem(){ if(!S||!Array.isArray(S.inv)||!S.inv.length)return null; var it=findItem(window._enhItemId); if(it)return it; var f=equippedItem('fabao')||equippedItem('weapon')||equippedItem('armor')||equippedItem('accessory')||S.inv[0]; window._enhItemId=f.id; return f; }
+function luckKey(tier){ return tier===10?'luck10':tier===20?'luck20':'luck'+tier; }
+function luckCount(tier){ return S.fu[luckKey(tier)]||0; }
+function enhRates3(target,luck,anti){ var base=ENH_PROB[target-1]; var suc=Math.min(100,base+(luck||0)); var burstC=ENH_BURST[target]||0; var burstOverall=anti?0:(100-suc)*burstC/100; var failAll=100-suc; var dropOverall=enhFailDrop(target)<=0?0:failAll-burstOverall; var stayOverall=failAll-burstOverall-dropOverall; return {base:base,bonus:luck||0,suc:suc,burstC:burstC,burst:burstOverall,drop:dropOverall,stay:stayOverall}; }
+function enhBonusTableHtml(it){ var d=enhPerLevel(it); var h='<h3>📊 +1～+15 逐级加成表（'+esc(it.n)+' · 基础攻击 '+it.atk+'）</h3><p class="small" style="margin:0 0 4px">每级加成 = 0.08×基础攻击 + 2 = <b>'+fmtN(d)+'</b> / 级（固定，不随等级递增）。当前：基础攻击 '+it.atk+' + 强化加成 '+fmtN(enhBonus(it))+' = <b>当前攻击 '+fmtN(itemCurAtk(it))+'</b>（强化 +'+(it.enh||0)+'）</p><p class="small">'; for(var L=1;L<=15;L++){ h+='<span style="'+(L===(it.enh||0)?'font-weight:900;color:var(--gold2)':'')+'">+'+L+'：攻击 '+it.atk+' + '+fmtN(d*L)+' = <b>'+fmtN(it.atk+d*L)+'</b> · 成功率 '+ENH_PROB[L-1]+'%'+(ENH_BURST[L]?' · 失败爆毁 '+ENH_BURST[L]+'%':' · 不爆')+'</span><br>'; } return h+'</p><p class="small">费用：30 + 当前等级×20 灵石。失败规则：+1~+3 失败不变；+4~+12 失败掉 1 级；+13~+15 失败掉 2 级；+8 起失败先判爆毁（防爆符可抵消爆毁）。强化等级按件存储，换装备不串级。</p>'; }
+window.openEnhance=function(){ if(!S)return; ensureSaveFields(); var body=document.getElementById('enhBody'); var it=enhSelItem();
+ if(!it){ body.innerHTML='<p>当前没有任何装备或法宝。</p><p class="small">先去商店购买或打怪掉落一件（购买与掉落先进库存，在档案「装备栏」里装备），再来强化。强化等级按件存储。</p>'; document.getElementById('enhModal').classList.remove('hidden'); return; }
+ var lv=it.enh||0;
+ var selHtml='<h3>选择要强化的物品（强化等级按件存储）</h3><div class="shopTabs">'+S.inv.map(function(x){ var eq=SLOT_DEFS.some(function(sd){ return S.equip[sd[0]]===x.id; }); return '<button data-enhitem="'+x.id+'" class="'+(x.id===it.id?'active':'')+'">'+esc(x.n)+'（'+SLOT_LABEL[x.slot]+' +'+(x.enh||0)+(eq?' · 已装备':'')+'）</button>'; }).join('')+'</div>';
+ if(lv>=15){ body.innerHTML=selHtml+'<p>选中物品：<b>'+esc(it.n)+'</b>（'+SLOT_LABEL[it.slot]+'）· 强化等级 <b>+15 已满级</b></p>'+enhBonusTableHtml(it); document.getElementById('enhModal').classList.remove('hidden'); body.querySelectorAll('[data-enhitem]').forEach(function(b){ b.onclick=function(){ window._enhItemId=b.getAttribute('data-enhitem'); openEnhance(); }; }); return; }
+ var target=lv+1, sk=enhStoneKey(target), cost=30+lv*20, luck=window._enhLuck||0, anti=!!window._enhAnti, r=enhRates3(target,luck,anti);
+ if(luck>0&&luckCount(luck)<=0){ luck=0; window._enhLuck=0; r=enhRates3(target,0,anti); }
+ if(anti&&(S.fu.anti||0)<=0){ anti=false; window._enhAnti=false; r=enhRates3(target,luck,false); }
+ var luckOpts=[[0,'不用幸运符']].concat([10,20,30,40,50,60].map(function(t){ return [t,'幸运符 +'+t+'%（余 '+luckCount(t)+'）']; }));
+ body.innerHTML=selHtml
+ +'<p>选中物品：<b>'+esc(it.n)+'</b>（'+SLOT_LABEL[it.slot]+'）<br>基础攻击 '+it.atk+' + 强化加成 '+fmtN(enhBonus(it))+' = <b>当前攻击 '+fmtN(itemCurAtk(it))+'</b><br>当前等级：<b>+'+lv+'</b> → 目标等级：<b>+'+target+'</b> · 下一级加成 +'+fmtN(enhPerLevel(it))+' 攻击</p>'
+ +'<p>基础成功率：<b>'+r.base+'%</b>'+(r.bonus?' · 幸运符加成 +'+r.bonus+'%':'')+'<br>最终成功率：<b>'+r.suc+'%</b> · 失败掉级率：<b>'+r.drop.toFixed(1)+'%</b>'+(r.stay>0?' · 失败不变率：<b>'+r.stay.toFixed(1)+'%</b>':'')+' · 爆毁率：<b>'+r.burst.toFixed(1)+'%</b>'+(r.burstC?'（+8 起：失败后爆概率 '+r.burstC+'%'+(anti?'，已选防爆符，本次爆毁抵消':'')+'）':'（+7 以下失败不爆）')+'</p>'
+ +'<p>所需：灵石 <b>'+cost+'</b>（公式 30+当前等级×20 · 你有 '+S.stone+'）· '+enhStoneName(target)+' ×1（你有 '+S.enhStones[sk]+' 颗'+(S.enhStones[sk]<1?'，不够不能强化':'')+'）</p>'
+ +(target>=8?'<p style="color:var(--bad)"><b>⚠️ +8 起失败有爆毁风险！可同时使用防爆符抵消爆毁（与幸运符不冲突）。</b></p>':'')
+ +'<h3>🍀 幸运符（六档选一，本次消耗）</h3><div class="shopTabs">'+luckOpts.map(function(o){ return '<button data-enluck="'+o[0]+'" class="'+(luck===o[0]?'active':'')+'" '+(o[0]>0&&luckCount(o[0])<=0?'disabled':'')+'>'+o[1]+'</button>'; }).join('')+'</div>'
+ +'<h3>🛡️ 防爆符（可与幸运符同时使用）</h3><div class="shopTabs"><button data-enanti="0" class="'+(!anti?'active':'')+'">不用防爆符</button><button data-enanti="1" class="'+(anti?'active':'')+'" '+((S.fu.anti||0)<=0?'disabled':'')+'>用防爆符 · 本次失败不爆（余 '+(S.fu.anti||0)+'）</button></div>'
+ +'<button class="primary" id="btnEnhGo3">🔨 强化 '+esc(it.n)+' 到 +'+target+'（成功率 '+r.suc+'%）</button>'
+ +'<h3>⬆️ 直升符（对选中物品 · 不走概率、不爆、不耗强化石）</h3>'+[[3,'up3'],[5,'up5'],[8,'up8'],[10,'up10']].map(function(u){ var dis=lv>=u[0]||S.fu[u[1]]<=0; return '<button data-upfu="'+u[1]+'" data-upto="'+u[0]+'" '+(dis?'disabled':'')+' style="margin-bottom:6px">直升+'+u[0]+'符（余 '+S.fu[u[1]]+'）'+(lv>=u[0]?' · 选中物品已 +'+lv+'，等于或高于目标不能用':S.fu[u[1]]<=0?' · 没有此符':' · 使用后选中物品直接升到 +'+u[0])+'</button>'; }).join('')
+ +'<h3>💥 跳级强化（对选中物品 · 成功跳 +1~+3 级，概率比普通低 20%）</h3>'
+ +'<button data-jump="jump" '+(lv>=9||S.fu.jump<=0?'disabled':'')+' style="margin-bottom:6px">狂暴强化石（余 '+S.fu.jump+'）· 成功率 '+Math.max(1,ENH_PROB[target-1]-20)+'%'+(lv>=9?' · 等级过高不能使用（9级以上禁用）':S.fu.jump<=0?' · 没有此道具':' · 当前等级9以下可用')+'</button>'
+ +'<button data-jump="jumpAdv" '+(lv>=12||S.fu.jumpAdv<=0?'disabled':'')+'>三连强化符（余 '+S.fu.jumpAdv+'）· 成功率 '+Math.max(1,ENH_PROB[target-1]-20)+'%'+(lv>=12?' · 等级过高不能使用（12级以上禁用）':S.fu.jumpAdv<=0?' · 没有此道具':' · 当前等级12以下可用')+'</button>'
+ +enhBonusTableHtml(it);
+ document.getElementById('enhModal').classList.remove('hidden');
+ body.querySelectorAll('[data-enhitem]').forEach(function(b){ b.onclick=function(){ window._enhItemId=b.getAttribute('data-enhitem'); openEnhance(); }; });
+ body.querySelectorAll('[data-enluck]').forEach(function(b){ b.onclick=function(){ window._enhLuck=+b.getAttribute('data-enluck'); openEnhance(); }; });
+ body.querySelectorAll('[data-enanti]').forEach(function(b){ b.onclick=function(){ window._enhAnti=b.getAttribute('data-enanti')==='1'; openEnhance(); }; });
+ var go=document.getElementById('btnEnhGo3'); if(go)go.onclick=function(){ doEnhance3(false); };
+ body.querySelectorAll('[data-upfu]').forEach(function(b){ b.onclick=function(){ useUpFu3(b.getAttribute('data-upfu'),+b.getAttribute('data-upto')); }; });
+ body.querySelectorAll('[data-jump]').forEach(function(b){ b.onclick=function(){ doEnhance3(true,b.getAttribute('data-jump')); }; });
+};
+function useUpFu3(key,to){ if(!S)return; ensureSaveFields(); var it=enhSelItem(); if(!it){ showToast('先获得一件装备/法宝再用直升符'); return; } var lv=it.enh||0; if(lv>=to){ showToast('不能用：选中物品已 +'+lv+'，等于或高于直升目标 +'+to); return; } if((S.fu[key]||0)<=0){ showToast('没有直升+'+to+'符'); return; } S.fu[key]--; it.enh=to; syncAllEquip(); log('⬆️ 使用直升+'+to+'符：'+it.n+' 直接升到 +'+to+'（不走概率、不爆）。','good'); showToast('⬆️ 直升成功：'+it.n+' +'+to); save(); render(); openEnhance(); }
+useUpFu=useUpFu3;
+function doEnhance3(isJump,jumpKey){ if(!S)return; ensureSaveFields(); var it=enhSelItem(); if(!it){ showToast('请先获得一件装备/法宝再强化'); return; } var lv=it.enh||0; if(lv>=15)return; var target=lv+1, sk=enhStoneKey(target), cost=30+lv*20, luck=isJump?0:(window._enhLuck||0), anti=isJump?!!window._enhAnti:!!window._enhAnti;
+ if(isJump){ var lim=jumpKey==='jump'?9:12; if(lv>=lim){ showToast('等级过高不能使用：选中物品 +'+lv+'，此道具需 '+lim+' 级以下'); return; } if((S.fu[jumpKey]||0)<=0){ showToast('跳级道具不够'); return; } }
+ if(S.enhStones[sk]<1){ showToast('强化石不够：强化 +'+target+' 需要 '+enhStoneName(target)+'×1，你有 '+S.enhStones[sk]+' 颗，去杂货铺买或打怪获取'); return; }
+ if(S.stone<cost){ showToast('灵石不够：需 '+cost); return; }
+ var r=enhRates3(target,luck,anti); var sucProb=isJump?Math.max(1,ENH_PROB[target-1]-20):r.suc;
+ function exec(){ if(!findItem(it.id)){ showToast('选中物品已不存在'); return; } S.stone-=cost; S.enhStones[sk]--; if(isJump)S.fu[jumpKey]--; if(!isJump&&luck>0){ var lk=luckKey(luck); if((S.fu[lk]||0)>0)S.fu[lk]--; if(lk==='luck10')S.fu.luckS=S.fu.luck10; if(lk==='luck20')S.fu.luckB=S.fu.luck20; } if(anti&&(S.fu.anti||0)>0)S.fu.anti--;
+  var ok=Math.random()*100<sucProb;
+  if(ok){ var nl=isJump?Math.min(15,lv+ri(1,3)):target; it.enh=nl; syncAllEquip(); log('🔨 强化成功：'+it.n+' 升到 +'+nl+(isJump?'（跳级 +'+(nl-lv)+' 级）':'')+'（成功率 '+sucProb+'%）· 基础攻击 '+it.atk+' + 强化加成 '+fmtN(enhBonus(it))+' = 当前攻击 '+fmtN(itemCurAtk(it)) ,'good'); showToast('🔨 强化成功！'+it.n+' +'+nl); }
+  else { var burstC=ENH_BURST[target]||0; var burst=(!anti&&burstC>0&&Math.random()*100<burstC);
+   if(burst){ var nm=it.n; removeItemById(it.id); window._enhItemId=null; log('💥 物品已爆毁：'+nm+' 强化 +'+target+' 失败并爆毁（爆毁率 '+burstC+'%），物品消失。未选防爆符时 +8 起才有此风险。','bad'); showToast('💥 爆毁！'+nm+' 已销毁'); }
+   else { var drop=enhFailDrop(target); it.enh=Math.max(0,lv-drop); syncAllEquip(); log('💥 强化失败：'+it.n+' 目标 +'+target+'（成功率 '+sucProb+'%），'+(drop?'掉 '+drop+' 级，现 +'+it.enh:'等级不变')+(burstC?'，未爆毁'+(anti?'（防爆符已抵消爆毁）':''):'')+'。','bad'); showToast('💥 强化失败：'+(drop?'掉'+drop+'级，现 +'+it.enh:'等级不变')); } }
+  window._enhLuck=0; window._enhAnti=false; save(); render(); openEnhance(); }
+ if(target>=10){ showConfirmDanger('⚠️ 高强化二次确认（+10以上）','目标 '+it.n+' +'+target+'：成功率 '+sucProb+'%、失败掉级率 '+r.drop.toFixed(1)+'%、爆毁率 '+r.burst.toFixed(1)+'%，物品可能爆毁，是否确认强化？',false,function(){ showConfirmDanger('⚠️ 再次确认','目标 +'+target+'：成功率 '+sucProb+'%，失败将掉级，爆毁率 '+r.burst.toFixed(1)+'% 物品可能销毁。确定继续？',false,exec); }); }
+ else if(target>=8){ showConfirmDanger('⚠️ 强化确认（+8 起有爆毁风险）',it.n+' 目标 +'+target+'：成功率 '+sucProb+'%、失败掉级、爆毁率 '+r.burst.toFixed(1)+'%'+(anti?'（已选防爆符，本次爆毁抵消）':'')+'，是否确认强化？',false,exec); }
+ else exec();
+}
+doEnhance2=function(isJump,jumpKey){ doEnhance3(isJump,jumpKey); };
+function enhTableHtml(cur){ return enhSelItem()?enhBonusTableHtml(enhSelItem()):''; }
+/* --- 转世保留库存与装备（法宝/装备与逐件强化等级一并保留） --- */
+var _rebirthPrev=rebirth;
+rebirth=function(){ var inv=(window.S&&Array.isArray(S.inv))?JSON.parse(JSON.stringify(S.inv)):null; var eq=(window.S&&S.equip)?JSON.parse(JSON.stringify(S.equip)):null; _rebirthPrev(); if(inv){ S.inv=inv; S.equip=eq; S._equipMigrated=true; validateInv(); syncAllEquip(); if(S.hp>maxHp(S))S.hp=maxHp(S); save(); render(); } };
+/* --- 短存档码扩展段：库存/装备/新幸运符随短码走（旧短码无此段时按旧法宝+旧强化等级迁移） --- */
+var _expShortPrev=exportShortCode;
+exportShortCode=function(){ var code=_expShortPrev(); if(!window.S)return code; ensureSaveFields(); var seg='E'+b64e(JSON.stringify({inv:S.inv||[],eq:S.equip||{},fu:{luck30:S.fu.luck30||0,luck40:S.fu.luck40||0,luck50:S.fu.luck50||0,luck60:S.fu.luck60||0}})); return code+'.'+seg; };
+var _decShortPrev=decodeShort;
+decodeShort=function(code){ var parts=String(code||'').trim().replace(/\s+/g,'').split('.'); var eseg=null; if(parts.length===10&&parts[9].charAt(0)==='E'){ eseg=parts[9].slice(1); parts=parts.slice(0,9); } var obj=_decShortPrev(parts.join('.')); if(eseg){ try{ var ej=JSON.parse(b64d(eseg)); if(ej&&Array.isArray(ej.inv)){ obj.inv=ej.inv; obj.equip=ej.eq||{weapon:null,armor:null,accessory:null,fabao:null}; obj._equipMigrated=true; } if(ej&&ej.fu&&obj.fu){ ['luck30','luck40','luck50','luck60'].forEach(function(k){ obj.fu[k]=Math.max(0,Math.floor(+ej.fu[k]||0)); }); } }catch(e){} } return obj; };
+setTimeout(function(){ if(window.S){ try{ ensureSaveFields(); render(); }catch(e){} } },200);
 </script>
 </body>
 </html>
