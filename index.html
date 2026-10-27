@@ -176,11 +176,11 @@ body[data-view="home"] .prof-bag{display:none!important}
 <p class="small" id="shopLocInfo" style="margin:0 0 6px"></p>
 <div id="shopBox" class="btns"></div>
 <h3 style="margin-top:12px">💰 价格表</h3>
-<div class="kv"><span>1 元</span><b>388 灵石</b></div>
-<div class="kv"><span>3 元</span><b>1358 灵石</b></div>
-<div class="kv"><span>6 元</span><b>3104 灵石</b></div>
-<div class="kv"><span>12 元</span><b>7760 灵石</b></div>
-<div class="kv"><span>30 元</span><b>23280 灵石</b></div>
+<div class="kv"><span>1 元</span><b>1552 灵石</b></div>
+<div class="kv"><span>3 元</span><b>5432 灵石</b></div>
+<div class="kv"><span>6 元</span><b>12416 灵石</b></div>
+<div class="kv"><span>12 元</span><b>31040 灵石</b></div>
+<div class="kv"><span>30 元</span><b>93120 灵石</b></div>
 
 <p class="small" id="rechargeInfo" style="margin:8px 0 4px;font-weight:700"></p>
 <p class="small" id="czLockInfo" style="margin:0 0 6px;color:var(--bad)"></p>
@@ -332,10 +332,30 @@ if(g>=1)gainExp(g); else log('（入定时间太短，未凝聚到修为——�
 log('💤 入定结束：入定 '+Math.max(1,Math.round(sec))+' 秒，按五成效率结算修为（离线同规则，上限8小时）。'); idleStart=null; document.getElementById('btnIdle').innerHTML='💤 入定放置 <span class="small">开始计时</span>'; render(); return;}
 idleStart=Date.now(); S.idleStart=idleStart; save(); document.getElementById('btnIdle').innerHTML='⏰ 入定中… 点击结束并结算'; log('💤 你开始入定。关闭页面后再回来，也会按五成效率、最多8小时自动结算。');
 }
+/* ===== 突破成功率（面板与判定共用同一公式 breakChanceInfo） =====
+   成功率（百分点）= 基础 83 − 大境界扣减（大境界序号 × 12）− 小阶扣减（小阶序号 × 3）+ 机缘加成（机缘 × 1），
+   基础合计下限 15%；有破境丹再 +20%，最终封顶 100%。
+   每前进一小阶恒降 3 个百分点（大境界一档 = 4 个小阶 = 12 点），全程逐级递减、不回升：
+   越到后面基础成功率越低，破境丹 +20% 的作用越大。 */
+function breakChanceInfo(s){
+ var realm=Math.max(0,Math.min(9,Math.floor(+s.realm||0)));
+ var sub=Math.max(0,Math.min(3,Math.floor(+s.sub||0)));
+ var ji=Math.max(0,Math.floor(+s.ji||0));
+ var base=83;
+ var realmPen=realm*12;
+ var subPen=sub*3;
+ var jiBonus=ji*1;
+ var raw=base-realmPen-subPen+jiBonus;
+ var baseChance=Math.max(15,Math.min(100,raw));
+ var hasPo=!!(s.pills&&s.pills.po>0);
+ var danBonus=hasPo?20:0;
+ var finalChance=Math.min(100,baseChance+danBonus);
+ return {base:base,realmPen:realmPen,subPen:subPen,ji:ji,jiBonus:jiBonus,raw:raw,baseChance:baseChance,hasPo:hasPo,danBonus:danBonus,final:finalChance,chance:finalChance/100};
+}
 function tryBreak(){
 if(traveling()){log('🧭 赶路中，不能突破，先到达目的地。','bad');return;} if(battle||pendingEvent)return; if(resting()){log('调息中，无法突破。','bad');return;} var need=needExp(S); if(S.exp<need){log('修为未达标，还差 '+Math.ceil(need-S.exp)+'。','bad');return;}
-var chance=.78 - S.realm*.04 + S.ji*.01; if(chance<.35)chance=.35;
-var usePo=S.pills.po>0; if(usePo){S.pills.po--; chance+=.2; log('服下破境丹，突破概率提升。');}
+var bInfo=breakChanceInfo(S); var chance=bInfo.chance;
+var usePo=bInfo.hasPo; if(usePo){S.pills.po--; log('服下破境丹，突破成功率 +20%（基础 '+bInfo.baseChance+'% → 最终 '+bInfo.final+'%）。');}
 S.exp-=need;
 if(Math.random()<chance){
 if(S.sub<3){S.sub++} else { if(S.realm>=9){ascend();return;} S.realm++; S.sub=0; S.life=LIFE_BY_REALM[S.realm]||S.life; log('🎉 突破大境界！寿元上限大增至 '+S.life+' 年。');}
@@ -990,7 +1010,7 @@ function sanitizeSave(obj){
   if(!obj.cd||typeof obj.cd!=='object')obj.cd={}; ['med','explore','herb','alchemy','gong','battleRest'].forEach(function(k){obj.cd[k]=Math.max(0,+obj.cd[k]||0)});
   obj.restUntil=Math.max(0,+obj.restUntil||0);
   obj.lastSign=String(obj.lastSign||'').slice(0,12); obj.vault=Math.max(0,Math.floor(+obj.vault||0)); obj.shopDay=String(obj.shopDay||'').slice(0,12); if(!obj.shopCounts||typeof obj.shopCounts!=='object')obj.shopCounts={}; ['sword','scroll','tisifu'].forEach(function(k){obj.shopCounts[k]=Math.max(0,Math.floor(+obj.shopCounts[k]||0))}); if(!Array.isArray(obj.talismanExpiries))obj.talismanExpiries=[]; obj.talismanExpiries=obj.talismanExpiries.map(function(x){return +x||0}).filter(function(x){return x>0}); if(!Array.isArray(obj.scrollExpiries))obj.scrollExpiries=[]; obj.scrollExpiries=obj.scrollExpiries.map(function(x){return +x||0}).filter(function(x){return x>0}); obj.swordExpires=Math.max(0,+obj.swordExpires||0); obj.swordFromShop=!!obj.swordFromShop; obj.talisman=Math.max(0,Math.floor(+obj.talisman||0)); obj.deathCount=Math.max(0,Math.floor(+obj.deathCount||0)); obj.weakUntil=Math.max(0,+obj.weakUntil||0); obj.lastMap=String(obj.lastMap||'赵国·恒岳派').slice(0,40); if(!Array.isArray(obj.deathLog))obj.deathLog=[]; obj.deathLog=obj.deathLog.slice(-10).map(function(d){return {t:String((d&&d.t)||'').slice(0,20),opp:String((d&&d.opp)||'').slice(0,20),loc:String((d&&d.loc)||'').slice(0,40),text:String((d&&d.text)||'').slice(0,160)}});
-  if(!Array.isArray(obj.usedCodes))obj.usedCodes=[]; obj.usedCodes=obj.usedCodes.map(function(c){return String(c).slice(0,40)}).filter(function(c){return /^CZ-.+-(388|1358|3104|7760|23280)-\d+-\d{4}$/.test(c)});
+  if(!Array.isArray(obj.usedCodes))obj.usedCodes=[]; obj.usedCodes=obj.usedCodes.map(function(c){return String(c).slice(0,40)}).filter(function(c){return /^CZ-.+-(1552|5432|12416|31040|93120|388|1358|3104|7760|23280)-\d+-\d{4}$/.test(c)});
   obj.rechargeCount=Math.max(0,Math.floor(+obj.rechargeCount||0)); obj.czFails=Math.max(0,Math.floor(+obj.czFails||0)); obj.czLockUntil=Math.max(0,+obj.czLockUntil||0);
   if(!obj.flags||typeof obj.flags!=='object')obj.flags={}; ['break','battle','explore'].forEach(function(k){obj.flags[k]=!!obj.flags[k]});
   if(!obj.taskClaimed||typeof obj.taskClaimed!=='object')obj.taskClaimed={}; ['break','battle','explore'].forEach(function(k){obj.taskClaimed[k]=!!obj.taskClaimed[k]});
@@ -1015,11 +1035,11 @@ document.getElementById('btnCopy').onclick=function(){ var t=document.getElement
 var restartArmed=false; document.getElementById('btnRestart').onclick=function(){ if(!restartArmed){restartArmed=true; this.textContent='⚠️ 再点一次确认放弃并重开（清除本机存档）'; return;} if(typeof window.performDeleteSave==='function'){ window._deletingSave=false; /* perform will set it */ window.performDeleteSave(); } else { window._deletingSave=true; try{localStorage.removeItem(KEY)}catch(e){} try{ S=null; }catch(e){} location.reload(); } };
 
 /* ===== 商店 / 签到 / 任务 / 兑换（纯本机） ===== */
-var CZ_AMOUNTS=[388,1358,3104,7760,23280];
+var CZ_AMOUNTS=[1552,5432,12416,31040,93120];
 function czChecksum(amt,seq){ var v=(amt*7+seq*101+8888)%10000; var s=String(v); while(s.length<4)s='0'+s; return s; }
 function czParse(raw){
 var code=String(raw||'').trim().replace(/^cz-/i,'CZ-');
-var m=/^CZ-(.+)-(388|1358|3104|7760|23280)-(\d+)-(\d{4})$/.exec(code);
+var m=/^CZ-(.+)-(1552|5432|12416|31040|93120)-(\d+)-(\d{4})$/.exec(code);
 if(!m)return null;
 return {name:m[1],amt:parseInt(m[2],10),seq:parseInt(m[3],10),chk:m[4],canon:'CZ-'+m[1]+'-'+m[2]+'-'+m[3]+'-'+m[4]};
 }
@@ -1642,15 +1662,20 @@ window.switchView=function(v){ tagColumns(); document.body.setAttribute('data-vi
  else if(v==='shop'){ sh('locBar',false); sh('quickBox',false); sh('guideBox',false); sh('questBox',false); sh('travelEventBox',false); sh('colProfile',false); sh('colMain',false); sh('colActions',true); }
  else { sh('locBar',false); sh('quickBox',false); sh('guideBox',false); sh('questBox',false); sh('travelEventBox',false); sh('colProfile',true); sh('colMain',false); sh('colActions',false); }
  window.scrollTo({top:0}); };
-/* ===== 突破面板（与 tryBreak 公式一致） ===== */
-window.openBreak=function(){ if(!S)return; ensureSaveFields(); var need=needExp(S); var exp=Math.floor(S.exp||0); var base=Math.max(.35,.78-S.realm*.04+S.ji*.01); var hasPo=(S.pills&&S.pills.po>0); var chance=Math.min(1,base+(hasPo?.2:0)); var pct=Math.round(chance*1000)/10;
+/* ===== 突破面板（与 tryBreak 共用同一公式 breakChanceInfo） ===== */
+window.openBreak=function(){ if(!S)return; ensureSaveFields(); var need=needExp(S); var exp=Math.floor(S.exp||0); var bInfo=breakChanceInfo(S); var hasPo=bInfo.hasPo; var pct=bInfo.final;
  var nextName, nextLife=''; if(S.sub<3){ nextName=REALMS[S.realm]+SUBS[S.sub+1]; } else if(S.realm>=9){ nextName='飞升'; } else { nextName=REALMS[S.realm+1]+SUBS[0]; nextLife=' · 寿元上限升至 '+LIFE_BY_REALM[S.realm+1]+' 年'; }
  var can=exp>=need; var loss=Math.floor(need*.3);
  var html='<p>当前境界：<b>'+esc(REALMS[S.realm])+' · '+esc(SUBS[S.sub])+'</b> → 突破后：<b>'+esc(nextName)+'</b>'+esc(nextLife)+'</p>'
  +'<div class="kv"><span>修为</span><b>'+exp+' / '+need+(can?'（已达标，可突破）':'（还差 '+(need-exp)+'）')+'</b></div>'
- +'<div class="kv"><span>基础成功率</span><b>'+Math.round(base*1000)/10+'%</b></div>'
+ +'<div class="kv"><span>基础</span><b>'+bInfo.base+'%</b></div>'
+ +'<div class="kv"><span>大境界扣减</span><b>−'+bInfo.realmPen+'%（'+esc(REALMS[S.realm])+' · 大境界序号 '+S.realm+' × 12%）</b></div>'
+ +'<div class="kv"><span>小阶扣减</span><b>−'+bInfo.subPen+'%（'+esc(SUBS[S.sub])+' · 小阶序号 '+S.sub+' × 3%）</b></div>'
+ +'<div class="kv"><span>机缘加成</span><b>+'+bInfo.jiBonus+'%（机缘 '+bInfo.ji+' × 1%）</b></div>'
+ +'<div class="kv"><span>基础合计（未含丹）</span><b>'+bInfo.base+' − '+bInfo.realmPen+' − '+bInfo.subPen+' + '+bInfo.jiBonus+' = '+bInfo.raw+'%'+(bInfo.raw!==bInfo.baseChance?(bInfo.raw<15?' → 低于下限，按下限 '+bInfo.baseChance+'% 算':' → 超过 100%，按 '+bInfo.baseChance+'% 算'):'')+'（当前 '+bInfo.baseChance+'%）</b></div>'
  +'<div class="kv"><span>破境丹加成</span><b>'+(hasPo?'有破境丹 ×'+S.pills.po+'：突破时自动消耗 1 颗，成功率 +20%':'无破境丹（可在丹药铺购买，+20%）')+'</b></div>'
- +'<div class="kv"><span>最终成功率</span><b>'+pct+'%（基础+破境丹加成后最高 100% 封顶，超过 100% 按 100% 算）</b></div>'
+ +'<div class="kv"><span>最终成功率</span><b>'+pct+'%（基础合计 '+bInfo.baseChance+'%'+(hasPo?' + 破境丹 20%':'')+'，最高 100% 封顶，超过 100% 按 100% 算）</b></div>'
+ +'<p class="small">成功率按小阶逐级递减：每前进一小阶 −3%，大境界每升一档 −12%（正好 4 个小阶），全程只降不升。越到后面基础成功率越低，破境丹 +20% 的作用越大，高境界突破前建议先备好破境丹。本面板与实际判定共用同一条公式，显示多少就按多少判定。</p>'
  +'<p class="small">破境丹计数口径统一：破境丹（80灵石）、小破境丹（50灵石）、筑基丹买入后都进同一个「破境丹」库存，效果完全相同（突破成功率 +20%），区别只有价格；本面板的破境丹数量就是这个统一库存数。</p>'
  +'<h3>成功后</h3><p class="small">境界升至 '+esc(nextName)+'；先扣除达标修为 '+need+' 点（相当于修为按达标量重置，超出的修为保留）；气血、灵力回满；奖励灵石 +10。</p>'
  +'<h3>失败规则</h3><p class="small">先扣除达标修为 '+need+' 点，失败再损失修为 '+loss+' 点（达标量的 30%），并损失 20% 气血上限的气血；不掉境界、不删档，休整后修为攒够可再试。破境丹在尝试时即消耗（无论成败）。</p>'
@@ -1882,7 +1907,7 @@ function decodeShort(code){
    if(cj.q){ obj.qMed=!!cj.q.m||obj.guideMed; obj.qKill=!!cj.q.k||obj.guideKill; obj.qBuy=!!cj.q.b||obj.guideBuy; }
    if(Array.isArray(cj.tit))obj.titles=cj.tit.map(function(t){return String(t).slice(0,20)}).filter(function(t){return KNOWN_TITLES.indexOf(t)>=0||t.length>0});
    obj.vaultEver=!!cj.ve; obj.firstDeath=!!cj.fd;
-   if(Array.isArray(cj.uc))obj.usedCodes=cj.uc.map(function(c){return String(c).slice(0,40)}).filter(function(c){return /^CZ-.+-(388|1358|3104|7760|23280)-\d+-\d{4}$/.test(c)});
+   if(Array.isArray(cj.uc))obj.usedCodes=cj.uc.map(function(c){return String(c).slice(0,40)}).filter(function(c){return /^CZ-.+-(1552|5432|12416|31040|93120|388|1358|3104|7760|23280)-\d+-\d{4}$/.test(c)});
    if(cj.rc!==undefined)obj.rechargeCount=Math.max(obj.rechargeCount||0,Math.floor(+cj.rc||0));
  } }catch(e){} }
  return obj;
